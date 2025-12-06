@@ -159,7 +159,7 @@ function App() {
              className={`w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors shadow-lg shadow-indigo-900/20 ${!isSidebarOpen && 'justify-center'}`}
            >
              <Plus size={18} />
-             {isSidebarOpen && <span className="text-sm font-bold">Add Project</span>}
+             {isSidebarOpen && <span className="text-sm font-bold">Import Project</span>}
            </button>
         </div>
       </aside>
@@ -249,7 +249,8 @@ function App() {
                      <div className="w-16 h-16 rounded-full bg-slate-900 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
                        <Plus size={32} />
                      </div>
-                     <span className="font-semibold">Add New Project</span>
+                     <span className="font-semibold">Link External Repo</span>
+                     <span className="text-xs text-slate-600 group-hover:text-indigo-400/70">Add a UI from another GitHub repo</span>
                    </button>
 
                    {/* Project Cards */}
@@ -264,19 +265,12 @@ function App() {
           )}
 
           {/* PROJECT VIEWS */}
-          {/* We keep instances alive (hidden) or mount/unmount based on preference. 
-              For Tabs pattern, usually we want to keep state, but for iframes, reloading is heavy. 
-              Let's render only the active one for performance in this demo, 
-              OR keep them hidden to preserve iframe state. keeping hidden is better for "Tabs" feel.
-          */}
           {tabs.map(tab => (
             <div 
               key={tab.id} 
               className={`absolute inset-0 bg-slate-950 transition-opacity duration-200 ${activeTabId === tab.id ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
             >
-               {/* Optimization: only render contents if active or previously active (complex), 
-                   for now simply render all tabs but hide via CSS to keep iframes alive. 
-               */}
+               {/* Note: We keep all iframes mounted (but hidden) so they don't reload when switching tabs */}
                <ProjectView project={projects.find(p => p.id === tab.projectId)!} />
             </div>
           ))}
