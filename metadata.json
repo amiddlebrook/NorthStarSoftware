@@ -1,0 +1,5 @@
+{
+  "name": "DevShowcase Portfolio",
+  "description": "A professional, tab-based portfolio application to showcase React UIs and GitHub projects with iframe previews.",
+  "requestFramePermissions": []
+}
