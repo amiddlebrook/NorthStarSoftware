@@ -102,13 +102,13 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
                     <BookOpen className="text-indigo-400 mt-1 flex-shrink-0" size={20} />
                     <div className="flex-grow">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-indigo-200 font-semibold text-sm">How to add separate GitHub Repos?</h3>
+                            <h3 className="text-indigo-200 font-semibold text-sm">How to host your separate Repos?</h3>
                             <span className="text-xs text-indigo-400 group-hover:underline">
                                 {showGuide ? 'Hide Guide' : 'Show Guide'}
                             </span>
                         </div>
                         <p className="text-indigo-300/70 text-xs mt-1">
-                            You don't need to upload code. Just enable "GitHub Pages" on your other repos.
+                            Use "Deploy from Branch" and disable Jekyll to support React apps.
                         </p>
                     </div>
                 </button>
@@ -118,17 +118,18 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClos
                         <div className="flex gap-3">
                             <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold shrink-0">1</div>
                             <div>
-                                <p className="font-semibold text-white">Go to your separate UI repository</p>
-                                <p className="text-xs text-slate-500">Example: github.com/yourname/awesome-ui</p>
+                                <p className="font-semibold text-white">Select "Deploy from Branch"</p>
+                                <p className="text-xs text-slate-500">
+                                    In Repo Settings {'>'} Pages {'>'} Build & deployment. Select <b>Deploy from a branch</b> (usually <code>main</code> or <code>gh-pages</code>).
+                                </p>
                             </div>
                         </div>
                         <div className="flex gap-3">
                             <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold shrink-0">2</div>
                             <div>
-                                <p className="font-semibold text-white">Enable GitHub Pages</p>
+                                <p className="font-semibold text-white">Use a .nojekyll file</p>
                                 <p className="text-xs text-slate-400 mt-1">
-                                    Navigate to <span className="text-indigo-400">Settings</span> {'>'} <span className="text-indigo-400">Pages</span>. 
-                                    <br/>Under "Build and deployment", select "Deploy from a branch" and choose <span className="font-mono text-slate-300">main</span> (or master).
+                                    Important: Add an empty file named <code className="text-indigo-400">.nojekyll</code> to your public folder. This stops GitHub from breaking your JS/CSS asset paths.
                                 </p>
                             </div>
                         </div>

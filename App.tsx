@@ -17,8 +17,11 @@ import { ProjectView } from './components/ProjectView';
 
 function App() {
   // --- State ---
+  // Using a specific namespace key to avoid conflicts if user hosts multiple apps on github.io
+  const STORAGE_KEY = 'devshowcase_portfolio_v1_projects';
+  
   const [projects, setProjects] = useState<Project[]>(() => {
-      const saved = localStorage.getItem('devshowcase_projects');
+      const saved = localStorage.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
   });
   
@@ -30,7 +33,7 @@ function App() {
 
   // --- Effects ---
   useEffect(() => {
-    localStorage.setItem('devshowcase_projects', JSON.stringify(projects));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
   }, [projects]);
 
   // --- Handlers ---
