@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   // IMPORTANT: This matches your GitHub repository name
-  base: '/NorthStarSoftware/',
+  base: '/',
   build: {
     outDir: 'docs',
   }
