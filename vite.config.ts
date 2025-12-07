@@ -7,6 +7,6 @@ export default defineConfig({
   // IMPORTANT: This matches your GitHub repository name
   base: '/NorthStarSoftware/',
   build: {
-    outDir: 'dist',
+    outDir: 'docs',
   }
 })
