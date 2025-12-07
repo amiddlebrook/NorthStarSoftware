@@ -4,7 +4,6 @@ import {
   FolderGit2,
   Plus,
   X,
-  Github,
   Search,
   Maximize2,
   Grid
@@ -67,6 +66,19 @@ function App() {
   // --- Handlers ---
   const handleAddProject = (newProject: Project) => {
     setProjects(prev => [newProject, ...prev]);
+  };
+
+  const handleDeleteProject = (projectId: string) => {
+    // Close any open tabs for this project
+    const tabsToClose = tabs.filter(t => t.projectId === projectId);
+    if (tabsToClose.length > 0) {
+      setTabs(prev => prev.filter(t => t.projectId !== projectId));
+      if (tabsToClose.some(t => t.id === activeTabId)) {
+        setActiveTabId(null);
+      }
+    }
+    // Remove the project
+    setProjects(prev => prev.filter(p => p.id !== projectId));
   };
 
   const openProject = (project: Project) => {
@@ -258,17 +270,6 @@ function App() {
                     <h1 className="text-3xl font-bold text-white mb-2">Portfolio Dashboard</h1>
                     <p className="text-slate-400">Welcome to your project showcase. Select a project to preview.</p>
                   </div>
-                  <div className="flex gap-3">
-                    <a
-                      href="https://github.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors font-medium text-sm"
-                    >
-                      <Github size={16} />
-                      GitHub Profile
-                    </a>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
@@ -287,7 +288,7 @@ function App() {
                   {/* Project Cards */}
                   {filteredProjects.map(project => (
                     <div key={project.id} className="h-[320px]">
-                      <ProjectCard project={project} onOpen={openProject} />
+                      <ProjectCard project={project} onOpen={openProject} onDelete={handleDeleteProject} />
                     </div>
                   ))}
                 </div>
