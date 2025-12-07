@@ -1,6 +1,8 @@
 import { Project } from './types';
 
 export const INITIAL_PROJECTS: Project[] = [
+  // NOTE: This is a Fallback. The Source of Truth is now /public/projects.json
+  // If projects.json fails to load, these projects will be shown.
   {
     id: '1',
     title: 'APEX Analytics Dashboard',
@@ -16,7 +18,7 @@ export const INITIAL_PROJECTS: Project[] = [
     title: 'Neon Commerce',
     description: 'A futuristic e-commerce storefront with 3D product previews and AI-driven recommendations.',
     githubUrl: 'https://github.com/facebook/react',
-    demoUrl: 'https://react.dev', 
+    demoUrl: 'https://react.dev',
     tags: ['Next.js', 'Three.js', 'Stripe'],
     addedAt: Date.now() - 100000,
     thumbnail: 'https://picsum.photos/seed/neon/800/600'
