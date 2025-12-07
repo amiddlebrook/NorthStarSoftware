@@ -6,7 +6,8 @@ import {
   X,
   Search,
   Maximize2,
-  Grid
+  Grid,
+  Download
 } from 'lucide-react';
 import { Project, Tab } from './types';
 import { INITIAL_PROJECTS, AVATAR_URL } from './constants';
@@ -79,6 +80,20 @@ function App() {
     }
     // Remove the project
     setProjects(prev => prev.filter(p => p.id !== projectId));
+  };
+
+  const handleExportProjects = () => {
+    const dataStr = JSON.stringify(projects, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'projects.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    alert('projects.json downloaded!\n\nTo make projects visible to everyone:\n1. Replace public/projects.json in your repo\n2. Run: npm run build\n3. Commit and push to GitHub');
   };
 
   const openProject = (project: Project) => {
@@ -270,6 +285,15 @@ function App() {
                     <h1 className="text-3xl font-bold text-white mb-2">Portfolio Dashboard</h1>
                     <p className="text-slate-400">Welcome to your project showcase. Select a project to preview.</p>
                   </div>
+                  {projects.length > 0 && (
+                    <button
+                      onClick={handleExportProjects}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-medium text-sm"
+                    >
+                      <Download size={16} />
+                      Export to Repo
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
