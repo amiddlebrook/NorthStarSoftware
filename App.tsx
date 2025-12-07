@@ -28,6 +28,9 @@ function App() {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Admin mode - only show add/delete/export when ?admin=true is in URL
+  const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
+
   // --- Effects ---
   useEffect(() => {
     const fetchProjects = async () => {
@@ -210,16 +213,18 @@ function App() {
           )}
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-slate-800">
-          <button
-            onClick={() => setAddModalOpen(true)}
-            className={`w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors shadow-lg shadow-indigo-900/20 ${!isSidebarOpen && 'justify-center'}`}
-          >
-            <Plus size={18} />
-            {isSidebarOpen && <span className="text-sm font-bold">Import Project</span>}
-          </button>
-        </div>
+        {/* Sidebar Footer - Admin Only */}
+        {isAdminMode && (
+          <div className="p-3 border-t border-slate-800">
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className={`w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors shadow-lg shadow-indigo-900/20 ${!isSidebarOpen && 'justify-center'}`}
+            >
+              <Plus size={18} />
+              {isSidebarOpen && <span className="text-sm font-bold">Import Project</span>}
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}
@@ -285,7 +290,7 @@ function App() {
                     <h1 className="text-3xl font-bold text-white mb-2">Portfolio Dashboard</h1>
                     <p className="text-slate-400">Welcome to your project showcase. Select a project to preview.</p>
                   </div>
-                  {projects.length > 0 && (
+                  {isAdminMode && projects.length > 0 && (
                     <button
                       onClick={handleExportProjects}
                       className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-medium text-sm"
@@ -297,22 +302,24 @@ function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                  {/* Create New Card (First Item) */}
-                  <button
-                    onClick={() => setAddModalOpen(true)}
-                    className="group border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-4 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all min-h-[300px]"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-slate-900 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
-                      <Plus size={32} />
-                    </div>
-                    <span className="font-semibold">Link External Repo</span>
-                    <span className="text-xs text-slate-600 group-hover:text-indigo-400/70">Add a UI from another GitHub repo</span>
-                  </button>
+                  {/* Create New Card (First Item) - Admin Only */}
+                  {isAdminMode && (
+                    <button
+                      onClick={() => setAddModalOpen(true)}
+                      className="group border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-4 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all min-h-[300px]"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-slate-900 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
+                        <Plus size={32} />
+                      </div>
+                      <span className="font-semibold">Link External Repo</span>
+                      <span className="text-xs text-slate-600 group-hover:text-indigo-400/70">Add a UI from another GitHub repo</span>
+                    </button>
+                  )}
 
                   {/* Project Cards */}
                   {filteredProjects.map(project => (
                     <div key={project.id} className="h-[320px]">
-                      <ProjectCard project={project} onOpen={openProject} onDelete={handleDeleteProject} />
+                      <ProjectCard project={project} onOpen={openProject} onDelete={handleDeleteProject} isAdmin={isAdminMode} />
                     </div>
                   ))}
                 </div>

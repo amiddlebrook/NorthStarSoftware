@@ -6,9 +6,10 @@ interface ProjectCardProps {
   project: Project;
   onOpen: (project: Project) => void;
   onDelete: (projectId: string) => void;
+  isAdmin: boolean;
 }
 
-export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onDelete }) => {
+export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onDelete, isAdmin }) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to remove "${project.title}" from your portfolio?`)) {
@@ -29,13 +30,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onDel
           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-          <button
-            className="p-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-500 transition-colors"
-            onClick={handleDelete}
-            title="Remove project"
-          >
-            <Trash2 size={16} />
-          </button>
+          {isAdmin && (
+            <button
+              className="p-2 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-500 transition-colors"
+              onClick={handleDelete}
+              title="Remove project"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
           <button className="p-2 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-500 transition-colors">
             <MonitorPlay size={16} />
           </button>
