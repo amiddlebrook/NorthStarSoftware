@@ -1,354 +1,256 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Layout,
-  FolderGit2,
-  Plus,
-  X,
-  Search,
-  Maximize2,
-  Grid,
-  Download
+  ArrowRight, ArrowUpRight, Check, ChevronDown, Code2, ExternalLink,
+  FolderGit2, GitFork, Github, Globe2, Layers3, LayoutGrid, List,
+  Menu, Search, Sparkles, Star, X
 } from 'lucide-react';
-import { Project, Tab } from './types';
-import { INITIAL_PROJECTS, AVATAR_URL } from './constants';
-import { ProjectCard } from './components/ProjectCard';
-import { AddProjectModal } from './components/AddProjectModal';
-import { ProjectView } from './components/ProjectView';
+import './styles.css';
 
-function App() {
-  // --- State ---
-  // Using a specific namespace key to avoid conflicts if user hosts multiple apps on github.io
-  const STORAGE_KEY = 'devshowcase_portfolio_v1_projects';
+type Repo = {
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  homepage: string | null;
+  topics: string[];
+  language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string | null;
+  pushed_at: string | null;
+  archived: boolean;
+  fork: boolean;
+};
+type Catalog = { generated_at: string; source?: string; repos: Repo[] };
+type Category = 'All work' | 'AI & automation' | 'Applications' | 'Interfaces' | 'Infrastructure';
 
-  const [projects, setProjects] = useState<Project[]>([]);
+const featuredNames = ['RivetFlow', 'SignalBench', 'ProofAtlas', 'KestrelMesh', 'GradientFoundry'];
+const aiNames = new Set([...featuredNames, 'Agent-Trainer', 'AAB', 'Mordor-Analytics']);
+const interfaceNames = new Set([
+  'Morphogenic-UI', 'Orbital-Glass', 'UI_template_2', 'UI_template_3',
+  'solar-system-ui-template', 'SysZeroCool', 'System-Zero-Tactical',
+  'eclipse-command', 'eclipse-os', 'SystemZero', 'Bio-System'
+]);
+const infrastructureNames = new Set(['Tesseract', 'Origin', 'vela-app-studio']);
+const categories: Category[] = ['All work', 'AI & automation', 'Applications', 'Interfaces', 'Infrastructure'];
 
-  const [tabs, setTabs] = useState<Tab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Admin mode - only show add/delete/export when ?admin=true is in URL
-  const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
-
-  // --- Effects ---
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const basePath = import.meta.env.BASE_URL;
-        const response = await fetch(`${basePath}projects.json`);
-        if (!response.ok) throw new Error('Failed to fetch projects.json');
-
-        const staticProjects: Project[] = await response.json();
-
-        // Fetch local overrides/additions
-        const saved = localStorage.getItem(STORAGE_KEY);
-        const localProjects: Project[] = saved ? JSON.parse(saved) : [];
-
-        // Merge: Static projects take precedence for their IDs. 
-        // We keep local projects only if their ID is NOT in the static set.
-        const staticIds = new Set(staticProjects.map(p => p.id));
-        const uniqueLocal = localProjects.filter(p => !staticIds.has(p.id));
-
-        setProjects([...staticProjects, ...uniqueLocal]);
-      } catch (err) {
-        console.warn('Could not load projects.json, falling back to local storage', err);
-        const saved = localStorage.getItem(STORAGE_KEY);
-        setProjects(saved ? JSON.parse(saved) : INITIAL_PROJECTS);
-      }
-    };
-
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if (projects.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-    }
-  }, [projects]);
-
-  // --- Handlers ---
-  const handleAddProject = (newProject: Project) => {
-    setProjects(prev => [newProject, ...prev]);
-  };
-
-  const handleDeleteProject = (projectId: string) => {
-    // Close any open tabs for this project
-    const tabsToClose = tabs.filter(t => t.projectId === projectId);
-    if (tabsToClose.length > 0) {
-      setTabs(prev => prev.filter(t => t.projectId !== projectId));
-      if (tabsToClose.some(t => t.id === activeTabId)) {
-        setActiveTabId(null);
-      }
-    }
-    // Remove the project
-    setProjects(prev => prev.filter(p => p.id !== projectId));
-  };
-
-  const handleExportProjects = () => {
-    const dataStr = JSON.stringify(projects, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'projects.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    alert('projects.json downloaded!\n\nTo make projects visible to everyone:\n1. Replace public/projects.json in your repo\n2. Run: npm run build\n3. Commit and push to GitHub');
-  };
-
-  const openProject = (project: Project) => {
-    // Check if tab exists
-    const existingTab = tabs.find(t => t.projectId === project.id);
-    if (existingTab) {
-      setActiveTabId(existingTab.id);
-      return;
-    }
-
-    // Create new tab
-    const newTab: Tab = {
-      id: Date.now().toString(),
-      projectId: project.id,
-      title: project.title,
-      type: 'preview'
-    };
-    setTabs(prev => [...prev, newTab]);
-    setActiveTabId(newTab.id);
-  };
-
-  const closeTab = (e: React.MouseEvent, tabId: string) => {
-    e.stopPropagation();
-    const newTabs = tabs.filter(t => t.id !== tabId);
-    setTabs(newTabs);
-
-    // If we closed the active tab, switch to the last available, or null
-    if (activeTabId === tabId) {
-      if (newTabs.length > 0) {
-        setActiveTabId(newTabs[newTabs.length - 1].id);
-      } else {
-        setActiveTabId(null);
-      }
-    }
-  };
-
-  const filteredProjects = projects.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const activeProject = tabs.find(t => t.id === activeTabId);
-  const projectData = activeProject ? projects.find(p => p.id === activeProject.projectId) : null;
-
+function categoryFor(repo: Repo): Category {
+  if (aiNames.has(repo.name) || repo.topics?.some(t => /agent|machine-learning|artificial-intelligence|llm/i.test(t))) return 'AI & automation';
+  if (interfaceNames.has(repo.name) || /(?:^ui[_-]|ui-template|design-system)/i.test(repo.name)) return 'Interfaces';
+  if (infrastructureNames.has(repo.name) || repo.topics?.some(t => /devops|infrastructure|platform-engineering/i.test(t))) return 'Infrastructure';
+  return 'Applications';
+}
+function cleanUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.startsWith('http') ? value : 'https://' + value);
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : null;
+  } catch { return null; }
+}
+function age(value: string | null): string {
+  if (!value) return 'GitHub repository';
+  const day = new Date(value);
+  if (!Number.isFinite(day.getTime())) return 'GitHub repository';
+  return 'Updated ' + day.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function getMonogram(name: string) {
+  const parts = name.replace(/[_-]/g, ' ').split(' ').filter(Boolean);
+  return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+}
+function getColor(name: string): number {
+  return [...name].reduce((x, c) => x + c.charCodeAt(0), 0) % 6;
+}
+function ProjectCard({ repo, compact = false }: { repo: Repo; compact?: boolean }) {
+  const demo = cleanUrl(repo.homepage);
+  const category = categoryFor(repo);
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
-
-      {/* Sidebar */}
-      <aside
-        className={`${isSidebarOpen ? 'w-72' : 'w-16'} flex-shrink-0 bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col z-20`}
-      >
-        <div className="h-14 flex items-center px-4 border-b border-slate-800">
-          <div className="flex items-center gap-3 text-indigo-400 font-bold tracking-tight">
-            <Layout className="flex-shrink-0" />
-            {isSidebarOpen && <span className="text-white truncate">DevShowcase</span>}
-          </div>
-        </div>
-
-        {/* User Info (Mini) */}
-        {isSidebarOpen && (
-          <div className="p-4 border-b border-slate-800/50">
-            <div className="flex items-center gap-3">
-              <img src={AVATAR_URL} alt="User" className="w-10 h-10 rounded-full border-2 border-slate-700" />
-              <div className="overflow-hidden">
-                <h4 className="text-sm font-semibold text-white truncate">Alex Developer</h4>
-                <p className="text-xs text-slate-500 truncate">Senior React Engineer</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Project List / Nav */}
-        <div className="flex-grow overflow-y-auto p-2 space-y-1">
-          {isSidebarOpen && (
-            <div className="px-2 py-2">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                <input
-                  type="text"
-                  placeholder="Filter projects..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-md py-1.5 pl-9 pr-3 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
-                Library ({filteredProjects.length})
-              </div>
-            </div>
-          )}
-
-          {filteredProjects.map(project => (
-            <button
-              key={project.id}
-              onClick={() => openProject(project)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group text-left
-                ${isSidebarOpen ? '' : 'justify-center'}
-                ${tabs.some(t => t.projectId === project.id && t.id === activeTabId)
-                  ? 'bg-indigo-500/10 text-indigo-300'
-                  : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
-                }
-              `}
-              title={!isSidebarOpen ? project.title : undefined}
-            >
-              <FolderGit2 size={18} className="flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium truncate">{project.title}</span>}
-            </button>
-          ))}
-
-          {filteredProjects.length === 0 && isSidebarOpen && (
-            <div className="text-center py-8 text-slate-600 text-xs">
-              No projects found.
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar Footer - Admin Only */}
-        {isAdminMode && (
-          <div className="p-3 border-t border-slate-800">
-            <button
-              onClick={() => setAddModalOpen(true)}
-              className={`w-full flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg transition-colors shadow-lg shadow-indigo-900/20 ${!isSidebarOpen && 'justify-center'}`}
-            >
-              <Plus size={18} />
-              {isSidebarOpen && <span className="text-sm font-bold">Import Project</span>}
-            </button>
-          </div>
-        )}
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
-
-        {/* Top Tab Bar */}
-        <header className="h-10 bg-slate-900 border-b border-slate-800 flex items-end px-2 gap-1 overflow-x-auto no-scrollbar z-10">
-          <button
-            onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="mb-1 mr-2 p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800"
-          >
-            <Maximize2 size={14} className={isSidebarOpen ? 'rotate-180' : ''} />
-          </button>
-
-          {/* Home Tab */}
-          <button
-            onClick={() => setActiveTabId(null)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-t-lg text-xs font-medium border-t border-x border-transparent transition-all min-w-[100px]
-              ${activeTabId === null
-                ? 'bg-slate-950 text-indigo-400 border-slate-800 border-b-slate-950 translate-y-[1px]'
-                : 'bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-              }
-            `}
-          >
-            <Grid size={14} />
-            <span>Dashboard</span>
-          </button>
-
-          {/* Project Tabs */}
-          {tabs.map(tab => (
-            <div
-              key={tab.id}
-              onClick={() => setActiveTabId(tab.id)}
-              className={`
-                group flex items-center gap-2 px-4 py-2 rounded-t-lg text-xs font-medium border-t border-x border-transparent transition-all min-w-[120px] max-w-[200px] cursor-pointer relative
-                ${activeTabId === tab.id
-                  ? 'bg-slate-950 text-indigo-400 border-slate-800 border-b-slate-950 translate-y-[1px]'
-                  : 'bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
-                }
-              `}
-            >
-              <span className="truncate pr-4">{tab.title}</span>
-              <button
-                onClick={(e) => closeTab(e, tab.id)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-        </header>
-
-        {/* Content Viewport */}
-        <div className="flex-1 overflow-hidden relative">
-
-          {/* DASHBOARD VIEW (When no active tab) */}
-          {activeTabId === null && (
-            <div className="absolute inset-0 overflow-y-auto p-8">
-              <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Portfolio Dashboard</h1>
-                    <p className="text-slate-400">Welcome to your project showcase. Select a project to preview.</p>
-                  </div>
-                  {isAdminMode && projects.length > 0 && (
-                    <button
-                      onClick={handleExportProjects}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-medium text-sm"
-                    >
-                      <Download size={16} />
-                      Export to Repo
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                  {/* Create New Card (First Item) - Admin Only */}
-                  {isAdminMode && (
-                    <button
-                      onClick={() => setAddModalOpen(true)}
-                      className="group border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-8 flex flex-col items-center justify-center gap-4 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all min-h-[300px]"
-                    >
-                      <div className="w-16 h-16 rounded-full bg-slate-900 group-hover:bg-indigo-500/20 flex items-center justify-center transition-colors">
-                        <Plus size={32} />
-                      </div>
-                      <span className="font-semibold">Link External Repo</span>
-                      <span className="text-xs text-slate-600 group-hover:text-indigo-400/70">Add a UI from another GitHub repo</span>
-                    </button>
-                  )}
-
-                  {/* Project Cards */}
-                  {filteredProjects.map(project => (
-                    <div key={project.id} className="h-[320px]">
-                      <ProjectCard project={project} onOpen={openProject} onDelete={handleDeleteProject} isAdmin={isAdminMode} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PROJECT VIEWS */}
-          {tabs.map(tab => (
-            <div
-              key={tab.id}
-              className={`absolute inset-0 bg-slate-950 transition-opacity duration-200 ${activeTabId === tab.id ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-            >
-              {/* Note: We keep all iframes mounted (but hidden) so they don't reload when switching tabs */}
-              <ProjectView project={projects.find(p => p.id === tab.projectId)!} />
-            </div>
-          ))}
-
-        </div>
-      </main>
-
-      <AddProjectModal
-        isOpen={isAddModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onAdd={handleAddProject}
-      />
-
-    </div>
+    <article className={'project-card shade-' + getColor(repo.name) + (compact ? ' compact-card' : '')}>
+      <div className="card-top">
+        <span className="project-mark" aria-hidden="true">{getMonogram(repo.name)}</span>
+        <a className="icon-button" href={repo.html_url} target="_blank" rel="noopener noreferrer" aria-label={'Open ' + repo.name + ' on GitHub'}>
+          <ArrowUpRight size={19} />
+        </a>
+      </div>
+      <div className="card-body">
+        <span className="eyebrow">{category}{repo.archived ? ' · Archived' : ''}</span>
+        <h3><a href={repo.html_url} target="_blank" rel="noopener noreferrer">{repo.name.replace(/_/g, ' ')}</a></h3>
+        <p>{repo.description?.trim() || 'Explore the source code, documentation, and development history on GitHub.'}</p>
+      </div>
+      <div className="card-bottom">
+        <span className="card-meta">
+          <span className="language-dot" />
+          {repo.language || 'Repository'}
+        </span>
+        <span className="card-stats" aria-label={repo.stargazers_count + ' stars and ' + repo.forks_count + ' forks'}>
+          <Star size={13} /> {repo.stargazers_count || 0}
+          <GitFork size={13} /> {repo.forks_count || 0}
+        </span>
+      </div>
+      <div className="card-links">
+        <a href={repo.html_url} target="_blank" rel="noopener noreferrer"><Github size={15} /> Source code <ArrowUpRight size={14}/></a>
+        {demo && <a href={demo} target="_blank" rel="noopener noreferrer"><Globe2 size={15}/> Website <ArrowUpRight size={14}/></a>}
+      </div>
+    </article>
   );
 }
 
+function App() {
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [category, setCategory] = useState<Category>('All work');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('recent');
+  const [display, setDisplay] = useState<'grid' | 'list'>('grid');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/repositories.json', { cache: 'no-cache' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Catalog unavailable');
+        return response.json() as Promise<Catalog>;
+      })
+      .then(data => {
+        if (alive && Array.isArray(data.repos)) setCatalog(data);
+        else if (alive) setLoadError(true);
+      })
+      .catch(() => { if (alive) setLoadError(true); });
+    return () => { alive = false; };
+  }, []);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault(); searchRef.current?.focus();
+      }
+      if (event.key === 'Escape' && document.activeElement === searchRef.current) {
+        setQuery(''); searchRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const repos = catalog?.repos || [];
+  const featured = useMemo(() => featuredNames.map(n => repos.find(r => r.name === n)).filter((r): r is Repo => Boolean(r)), [repos]);
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    const items = repos.filter(r =>
+      (category === 'All work' || categoryFor(r) === category) &&
+      (!term || [r.name, r.description || '', r.language || '', ...r.topics, categoryFor(r)].join(' ').toLowerCase().includes(term))
+    );
+    return items.sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      if (sort === 'stars') return (b.stargazers_count || 0) - (a.stargazers_count || 0) || a.name.localeCompare(b.name);
+      return (Date.parse(b.pushed_at || b.updated_at || '') || 0) - (Date.parse(a.pushed_at || a.updated_at || '') || 0) || a.name.localeCompare(b.name);
+    });
+  }, [repos, query, category, sort]);
+  const languages = new Set(repos.map(r => r.language).filter(Boolean)).size;
+  const categoryCount = (cat: Category) => cat === 'All work' ? repos.length : repos.filter(r => categoryFor(r) === cat).length;
+  const syncDate = catalog?.generated_at && Number.isFinite(Date.parse(catalog.generated_at))
+    ? new Date(catalog.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+  const selectCategory = (cat: Category) => {
+    setCategory(cat); setMenuOpen(false);
+    document.getElementById('directory')?.scrollIntoView({ behavior: 'smooth' });
+  };
+  return (
+    <div className="site">
+      <div className="mobile-bar">
+        <a className="mobile-brand" href="#home"><span className="brand-symbol">N<span>✦</span></span> NORTHSTAR</a>
+        <button className="icon-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
+      </div>
+      <aside className={'sidebar ' + (menuOpen ? 'sidebar-open' : '')}>
+        <a href="#home" className="brand" onClick={() => setMenuOpen(false)}>
+          <span className="brand-symbol">N<span>✦</span></span>
+          <span className="brand-text">NORTHSTAR <small>SOFTWARE / STUDIO</small></span>
+        </a>
+        <div className="nav-label">WORKSPACE</div>
+        <nav aria-label="Project navigation" className="nav">
+          {categories.map((cat, i) => <button key={cat} className={'nav-item ' + (category === cat ? 'nav-active' : '')} onClick={() => selectCategory(cat)}>
+            {i === 0 ? <LayoutGrid size={17}/> : i === 1 ? <Sparkles size={17}/> : i === 2 ? <FolderGit2 size={17}/> : i === 3 ? <Layers3 size={17}/> : <Code2 size={17}/>}
+            <span>{cat}</span><span className="nav-count">{categoryCount(cat)}</span>
+          </button>)}
+        </nav>
+        <div className="sidebar-spacer" />
+        <div className="profile-panel">
+          <img src="https://avatars.githubusercontent.com/u/26336026?v=4" alt="" loading="lazy" width="42" height="42"/>
+          <div><strong>@amiddlebrook</strong><span>GitHub portfolio</span></div>
+          <a href="https://github.com/amiddlebrook" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><ArrowUpRight size={17}/></a>
+        </div>
+        <p className="sidebar-caption">Built for the open web.<br/>Powered by Cloudflare + GitHub.</p>
+      </aside>
+      {menuOpen && <button className="mobile-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
+      <main id="home" className="main">
+        <header className="topbar">
+          <div className="breadcrumb"><span>PORTFOLIO</span><span className="slash">/</span><strong>Overview</strong></div>
+          <div className="top-actions">
+            <span className="availability"><span /> PUBLIC PROJECT DIRECTORY</span>
+            <a className="top-github" href="https://github.com/amiddlebrook" target="_blank" rel="noopener noreferrer"><Github size={17}/> GitHub <ArrowUpRight size={14}/></a>
+          </div>
+        </header>
+        <div className="content">
+          <section className="hero">
+            <div className="hero-glow" aria-hidden="true"/>
+            <div className="hero-content">
+              <div className="microheading"><span className="pulse-dot"/> THE WORK / THE BUILDS / THE IDEAS</div>
+              <h1>Software built<br/><em>to do more.</em></h1>
+              <p>A complete index of the public projects behind NorthStar Software — applications, AI systems, developer tools, and interface experiments. All in one place.</p>
+              <div className="hero-actions">
+                <a href="#directory" className="button-primary">Explore the projects <ArrowRight size={17}/></a>
+                <a href="https://github.com/amiddlebrook" target="_blank" rel="noopener noreferrer" className="button-ghost"><Github size={17}/> View GitHub profile</a>
+              </div>
+            </div>
+            <div className="hero-graphic" aria-hidden="true">
+              <div className="orbit orbit-1" /><div className="orbit orbit-2" /><div className="orbit orbit-3" />
+              <div className="hero-core"><span>N</span><i>✦</i></div>
+              <div className="orbit-point point-1"/><div className="orbit-point point-2"/><div className="orbit-point point-3"/>
+              <div className="graphic-tag tag-top">BUILD / SHIP / REPEAT</div>
+              <div className="graphic-tag tag-bottom">NORTHSTAR — 001</div>
+            </div>
+          </section>
+          <section className="metrics" aria-label="Portfolio statistics">
+            <div className="metric"><span>PUBLIC REPOSITORIES</span><strong>{catalog ? repos.length : '—'}</strong><small>Automatically indexed</small></div>
+            <div className="metric"><span>FEATURED PROJECTS</span><strong>{catalog ? featured.length : '—'}</strong><small>Selected engineering work</small></div>
+            <div className="metric"><span>LANGUAGES</span><strong>{catalog ? (languages || '—') : '—'}</strong><small>As listed on GitHub</small></div>
+            <div className="metric"><span>LAST CATALOG SYNC</span><strong className="metric-date">{syncDate}</strong><small>Scheduled refresh every 6 hours</small></div>
+          </section>
+          {featured.length > 0 && (
+            <section className="featured-section" aria-labelledby="featured-title">
+              <div className="section-heading"><div><div className="section-kicker"><span>01</span> / HANDPICKED</div><h2 id="featured-title">Featured work<span className="h2-dot">.</span></h2></div><p>Selected projects from the portfolio.</p></div>
+              <div className="featured-grid">
+                {featured.map((repo, i) => <article className={'featured-card featured-' + i} key={repo.name}>
+                  <div className="featured-card-top"><span>PROJECT / {String(i + 1).padStart(2, '0')}</span><a aria-label={'View ' + repo.name + ' repository'} href={repo.html_url} target="_blank" rel="noopener noreferrer"><ArrowUpRight size={20}/></a></div>
+                  <div className="featured-icon"><span>{getMonogram(repo.name)}</span></div>
+                  <div><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p>{repo.description || 'Explore this project’s architecture, source code, and documentation.'}</p></div>
+                  <a className="featured-link" href={repo.html_url} target="_blank" rel="noopener noreferrer">Explore repository <ArrowRight size={16}/></a>
+                </article>)}
+              </div>
+            </section>
+          )}
+          <section className="directory-section" id="directory" aria-labelledby="directory-title">
+            <div className="section-heading"><div><div className="section-kicker"><span>02</span> / COMPLETE ARCHIVE</div><h2 id="directory-title">Project directory<span className="h2-dot">.</span></h2></div><p>Every public repository. Nothing hidden behind a curated list.</p></div>
+            <div className="toolbar">
+              <label className="search-wrap"><Search size={19}/><input ref={searchRef} value={query} onChange={e => setQuery(e.target.value)} placeholder="Search projects, technologies, descriptions..." aria-label="Search repositories"/>{query && <button className="clear-search" onClick={() => setQuery('')} aria-label="Clear search"><X size={16}/></button>}<kbd>⌘ K</kbd></label>
+              <div className="toolbar-right">
+                <label className="sort-wrap" aria-label="Sort repositories"><span>SORT</span><select value={sort} onChange={e => setSort(e.target.value)}><option value="recent">Recently updated</option><option value="name">Name A–Z</option><option value="stars">Most starred</option></select><ChevronDown size={15}/></label>
+                <div className="display-toggle" role="group" aria-label="Display mode"><button aria-label="Grid view" aria-pressed={display === 'grid'} className={display === 'grid' ? 'selected' : ''} onClick={() => setDisplay('grid')}><LayoutGrid size={16}/></button><button aria-label="List view" aria-pressed={display === 'list'} className={display === 'list' ? 'selected' : ''} onClick={() => setDisplay('list')}><List size={16}/></button></div>
+              </div>
+            </div>
+            <div className="filter-row">
+              {categories.map(cat => <button key={cat} className={'filter-pill ' + (category === cat ? 'pill-active' : '')} onClick={() => setCategory(cat)}>{cat}<span>{categoryCount(cat)}</span></button>)}
+            </div>
+            <div className="result-count"><span>{filtered.length} {filtered.length === 1 ? 'REPOSITORY' : 'REPOSITORIES'}</span><span>Source: <a href="https://github.com/amiddlebrook?tab=repositories" target="_blank" rel="noopener noreferrer">GitHub / @amiddlebrook <ExternalLink size={12}/></a></span></div>
+            {loadError ? <div className="empty-state"><Code2 size={28}/><h3>Unable to load repository index</h3><p>Please reload the page or browse the public repositories directly on GitHub.</p><a href="https://github.com/amiddlebrook?tab=repositories">Open GitHub <ArrowUpRight size={15}/></a></div> :
+              !catalog ? <div className="loading-state">Loading public repositories…</div> :
+              filtered.length === 0 ? <div className="empty-state"><Search size={28}/><h3>No matching projects</h3><p>Try a different search or reset the filters.</p><button onClick={() => {setQuery('');setCategory('All work');}}>Clear filters <ArrowRight size={15}/></button></div> :
+              <div className={'projects-grid ' + (display === 'list' ? 'projects-list' : '')}>{filtered.map(repo => <ProjectCard key={repo.full_name} repo={repo} compact={display === 'list'}/>)}</div>
+            }
+          </section>
+          <section className="bottom-banner"><div><span className="microheading">FOLLOW THE WORK</span><h2>See what ships next.</h2><p>The directory refreshes from GitHub automatically as public repositories are added or updated.</p></div><a href="https://github.com/amiddlebrook?tab=repositories" target="_blank" rel="noopener noreferrer">All repositories on GitHub <ArrowUpRight size={18}/></a></section>
+          <footer className="footer"><span>© {new Date().getFullYear()} NorthStar Software</span><span>PUBLIC PORTFOLIO <span className="footer-star">✦</span> CLOUDFLARE WORKERS</span><a href="https://github.com/amiddlebrook/NorthStarSoftware" target="_blank" rel="noopener noreferrer">Portfolio source <ArrowUpRight size={13}/></a></footer>
+        </div>
+      </main>
+    </div>
+  );
+}
 export default App;
