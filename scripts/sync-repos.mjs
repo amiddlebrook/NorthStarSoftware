@@ -27,7 +27,7 @@ try {
   const repos = all
     .filter(r => r.owner?.login?.toLowerCase() === owner && r.private === false)
     .map(r => ({
-      name: r.name, full_name: r.full_name, html_url: r.html_url,
+      name: r.name, full_name: r.full_name, html_url: r.html_url, default_branch: r.default_branch,
       description: r.description, homepage: r.homepage, topics: r.topics || [],
       language: r.language, stargazers_count: r.stargazers_count || 0,
       forks_count: r.forks_count || 0, updated_at: r.updated_at,

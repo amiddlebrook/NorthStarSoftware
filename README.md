@@ -40,3 +40,9 @@ The repository includes an initial catalog of all public repositories identified
 - No Cloudflare D1, KV, R2, external hosting, or API-token runtime storage needed
 
 Public repository metadata is retrieved at build time. A repository's Website button is shown only when that repository exposes a valid homepage URL in GitHub metadata. Website availability is not guaranteed.
+
+## Real app previews and click-throughs
+
+The build reads each public repository's Wrangler configuration, discovers its Worker name, checks whether `https://<worker>.averymiddlebrook2014.workers.dev/` actually serves an HTML page, and captures a real 1440×900 screenshot with Playwright. Where no Cloudflare Worker can be verified, a functioning HTTPS repository homepage is used when available. Where no live app exists, a genuine screenshot or demo image from the repository may be displayed and the card explicitly identifies it as source-only; the card falls back to the GitHub repository rather than inventing a working deployment.
+
+Clicking a card's main area opens the verified live application in a new tab. The separate GitHub source link always opens the source repository. CI regenerates screenshots on deployment and every six hours.

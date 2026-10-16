@@ -12,6 +12,9 @@ type Repo = {
   html_url: string;
   description: string | null;
   homepage: string | null;
+  live_url?: string | null;
+  preview_image?: string | null;
+  preview_kind?: string | null;
   topics: string[];
   language: string | null;
   stargazers_count: number;
@@ -61,34 +64,35 @@ function getColor(name: string): number {
   return [...name].reduce((x, c) => x + c.charCodeAt(0), 0) % 6;
 }
 function ProjectCard({ repo, compact = false }: { repo: Repo; compact?: boolean }) {
-  const demo = cleanUrl(repo.homepage);
+  const live = cleanUrl(repo.live_url);
+  const primary = live || repo.html_url;
   const category = categoryFor(repo);
   return (
     <article className={'project-card shade-' + getColor(repo.name) + (compact ? ' compact-card' : '')}>
-      <div className="card-top">
-        <span className="project-mark" aria-hidden="true">{getMonogram(repo.name)}</span>
-        <a className="icon-button" href={repo.html_url} target="_blank" rel="noopener noreferrer" aria-label={'Open ' + repo.name + ' on GitHub'}>
-          <ArrowUpRight size={19} />
-        </a>
+      <a className="card-hitarea" href={primary} target="_blank" rel="noopener noreferrer" aria-label={live ? 'Open live app ' + repo.name : 'View repository for ' + repo.name} />
+      <div className="project-preview">
+        {repo.preview_image
+          ? <img src={repo.preview_image} alt={'Actual preview of ' + repo.name} loading="lazy" decoding="async" />
+          : <div className="preview-placeholder"><span className="preview-placeholder-icon"><Code2 size={30}/></span><span>PREVIEW NOT AVAILABLE</span></div>}
+        <span className={'preview-badge ' + (live ? 'live-badge' : '')}>{live ? 'LIVE APP' : repo.preview_image ? 'REPOSITORY MEDIA' : 'SOURCE ONLY'}</span>
+        <span className="preview-open"><ArrowUpRight size={17}/></span>
       </div>
       <div className="card-body">
         <span className="eyebrow">{category}{repo.archived ? ' · Archived' : ''}</span>
-        <h3><a href={repo.html_url} target="_blank" rel="noopener noreferrer">{repo.name.replace(/_/g, ' ')}</a></h3>
+        <h3>{repo.name.replace(/_/g, ' ')}</h3>
         <p>{repo.description?.trim() || 'Explore the source code, documentation, and development history on GitHub.'}</p>
       </div>
       <div className="card-bottom">
-        <span className="card-meta">
-          <span className="language-dot" />
-          {repo.language || 'Repository'}
-        </span>
+        <span className="card-meta"><span className="language-dot" />{repo.language || 'Repository'}</span>
         <span className="card-stats" aria-label={repo.stargazers_count + ' stars and ' + repo.forks_count + ' forks'}>
           <Star size={13} /> {repo.stargazers_count || 0}
           <GitFork size={13} /> {repo.forks_count || 0}
         </span>
       </div>
       <div className="card-links">
-        <a href={repo.html_url} target="_blank" rel="noopener noreferrer"><Github size={15} /> Source code <ArrowUpRight size={14}/></a>
-        {demo && <a href={demo} target="_blank" rel="noopener noreferrer"><Globe2 size={15}/> Website <ArrowUpRight size={14}/></a>}
+        {live && <a href={live} target="_blank" rel="noopener noreferrer"><Globe2 size={15}/> Open live app <ArrowUpRight size={14}/></a>}
+        <a href={repo.html_url} target="_blank" rel="noopener noreferrer"><Github size={15} /> GitHub source <ArrowUpRight size={14}/></a>
+        {!live && <span className="no-deployment">No verified live deployment</span>}
       </div>
     </article>
   );
@@ -218,12 +222,20 @@ function App() {
             <section className="featured-section" aria-labelledby="featured-title">
               <div className="section-heading"><div><div className="section-kicker"><span>01</span> / HANDPICKED</div><h2 id="featured-title">Featured work<span className="h2-dot">.</span></h2></div><p>Selected projects from the portfolio.</p></div>
               <div className="featured-grid">
-                {featured.map((repo, i) => <article className={'featured-card featured-' + i} key={repo.name}>
-                  <div className="featured-card-top"><span>PROJECT / {String(i + 1).padStart(2, '0')}</span><a aria-label={'View ' + repo.name + ' repository'} href={repo.html_url} target="_blank" rel="noopener noreferrer"><ArrowUpRight size={20}/></a></div>
-                  <div className="featured-icon"><span>{getMonogram(repo.name)}</span></div>
-                  <div><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p>{repo.description || 'Explore this project’s architecture, source code, and documentation.'}</p></div>
-                  <a className="featured-link" href={repo.html_url} target="_blank" rel="noopener noreferrer">Explore repository <ArrowRight size={16}/></a>
-                </article>)}
+                {featured.map((repo, i) => {
+                  const live = cleanUrl(repo.live_url);
+                  const primary = live || repo.html_url;
+                  return <article className={'featured-card featured-' + i} key={repo.name}>
+                    <a className="featured-hitarea" href={primary} target="_blank" rel="noopener noreferrer" aria-label={live ? 'Open live ' + repo.name : 'View ' + repo.name + ' source'} />
+                    <div className="featured-card-top"><span>PROJECT / {String(i + 1).padStart(2, '0')}</span><a aria-label={'View ' + repo.name + ' on GitHub'} href={repo.html_url} target="_blank" rel="noopener noreferrer"><Github size={17}/></a></div>
+                    <div className="featured-image">
+                      {repo.preview_image ? <img src={repo.preview_image} alt={'Actual preview of ' + repo.name} loading="lazy" decoding="async" /> : <div className="featured-empty"><Code2 size={30}/><span>NO LIVE SCREENSHOT</span></div>}
+                      <span className={'preview-badge ' + (live ? 'live-badge' : '')}>{live ? 'LIVE APP' : repo.preview_image ? 'REPOSITORY MEDIA' : 'SOURCE ONLY'}</span>
+                    </div>
+                    <div className="featured-information"><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p>{repo.description || 'Explore the project architecture, source code, and documentation.'}</p></div>
+                    <span className="featured-link">{live ? 'Launch app' : 'Explore repository'} <ArrowRight size={16}/></span>
+                  </article>;
+                })}
               </div>
             </section>
           )}
