@@ -91,7 +91,7 @@ function ProjectCard({ repo, compact = false }: { repo: Repo; compact?: boolean 
         <span className="eyebrow">{category}{repo.archived ? ' · Archived' : ''}</span>
         <h3>{repo.name.replace(/_/g, ' ')}</h3>
         <p className="project-summary">{summary.short}</p>
-        {summary.overview && <details className="project-details"><summary>What it does <ChevronDown size={14}/></summary><p>{summary.overview}</p></details>}
+        {summary.overview && <p className="project-overview">{summary.overview}</p>}
       </div>
       <div className="card-bottom">
         <span className="card-meta"><span className="language-dot" />{repo.language || 'Repository'}</span>
@@ -243,7 +243,7 @@ function App() {
                       {repo.preview_image ? <img src={repo.preview_image} alt={'Actual preview of ' + repo.name} loading="lazy" decoding="async" /> : <div className="featured-empty"><Code2 size={30}/><span>NO LIVE SCREENSHOT</span></div>}
                       <span className={'preview-badge ' + (live ? 'live-badge' : '')}>{live ? 'LIVE APP' : repo.preview_image ? 'REPOSITORY MEDIA' : 'SOURCE ONLY'}</span>
                     </div>
-                    <div className="featured-information"><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p className="project-summary">{getProjectSummary(repo).short}</p>{getProjectSummary(repo).overview && <details className="project-details"><summary>What it does <ChevronDown size={14}/></summary><p>{getProjectSummary(repo).overview}</p></details>}</div>
+                    <div className="featured-information"><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p className="project-summary">{getProjectSummary(repo).short}</p>{getProjectSummary(repo).overview && <p className="project-overview">{getProjectSummary(repo).overview}</p>}</div>
                     <span className="featured-link">{live ? 'Launch app' : 'Explore repository'} <ArrowRight size={16}/></span>
                   </article>;
                 })}
