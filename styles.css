@@ -111,3 +111,47 @@
   .project-card .card-body .project-summary,
   .featured-card .featured-information .project-summary { font-size: 12px; }
 }
+
+/* Full project explanations are visible on the thumbnails, with no disclosure click required. */
+.project-card .card-body .project-summary,
+.featured-card .featured-information .project-summary {
+  margin: 9px 0 0;
+  font-size: 12.75px;
+  line-height: 1.58;
+  color: #e3f5f5;
+  font-weight: 650;
+}
+.project-card .card-body .project-overview,
+.featured-card .featured-information .project-overview {
+  display: block;
+  margin: 11px 0 0;
+  max-width: none;
+  color: #b6cbd2;
+  font-size: 12.5px;
+  line-height: 1.72;
+  font-weight: 400;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.project-card .card-body .project-overview {
+  -webkit-box-orient: initial;
+}
+.project-card { min-height: 440px; }
+.featured-card .featured-information { padding-bottom: 6px; }
+.featured-card .featured-link { margin-top: 12px; }
+.projects-list .project-card { min-height: 190px; }
+.projects-list .card-body { align-self: center; padding: 18px 0 4px; }
+.projects-list .card-body .project-overview {
+  display: block;
+  -webkit-line-clamp: unset;
+  white-space: normal;
+}
+.projects-list .card-bottom { align-self: center; }
+.projects-list .card-links { padding-bottom: 16px; }
+@media(max-width: 570px) {
+  .project-card .card-body .project-overview,
+  .featured-card .featured-information .project-overview { font-size: 12px; line-height: 1.68; }
+  .projects-list .project-card { min-height: 220px; }
+  .projects-list .card-body { padding: 12px 8px 4px 0; align-self: start; }
+}
