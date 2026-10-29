@@ -5,6 +5,7 @@ import {
   Menu, Search, Sparkles, Star, X
 } from 'lucide-react';
 import './styles.css';
+import { projectSummaries } from './projectSummaries';
 
 type Repo = {
   name: string;
@@ -63,10 +64,19 @@ function getMonogram(name: string) {
 function getColor(name: string): number {
   return [...name].reduce((x, c) => x + c.charCodeAt(0), 0) % 6;
 }
+function getProjectSummary(repo: Repo) {
+  const curated = projectSummaries[repo.name];
+  return {
+    short: curated?.short || repo.description?.trim() || 'Explore this project’s source code, documentation, and architecture.',
+    overview: curated?.overview || null
+  };
+}
+
 function ProjectCard({ repo, compact = false }: { repo: Repo; compact?: boolean }) {
   const live = cleanUrl(repo.live_url);
   const primary = live || repo.html_url;
   const category = categoryFor(repo);
+  const summary = getProjectSummary(repo);
   return (
     <article className={'project-card shade-' + getColor(repo.name) + (compact ? ' compact-card' : '')}>
       <a className="card-hitarea" href={primary} target="_blank" rel="noopener noreferrer" aria-label={live ? 'Open live app ' + repo.name : 'View repository for ' + repo.name} />
@@ -80,7 +90,8 @@ function ProjectCard({ repo, compact = false }: { repo: Repo; compact?: boolean 
       <div className="card-body">
         <span className="eyebrow">{category}{repo.archived ? ' · Archived' : ''}</span>
         <h3>{repo.name.replace(/_/g, ' ')}</h3>
-        <p>{repo.description?.trim() || 'Explore the source code, documentation, and development history on GitHub.'}</p>
+        <p className="project-summary">{summary.short}</p>
+        {summary.overview && <details className="project-details"><summary>What it does <ChevronDown size={14}/></summary><p>{summary.overview}</p></details>}
       </div>
       <div className="card-bottom">
         <span className="card-meta"><span className="language-dot" />{repo.language || 'Repository'}</span>
@@ -140,7 +151,7 @@ function App() {
     const term = query.trim().toLowerCase();
     const items = repos.filter(r =>
       (category === 'All work' || categoryFor(r) === category) &&
-      (!term || [r.name, r.description || '', r.language || '', ...r.topics, categoryFor(r)].join(' ').toLowerCase().includes(term))
+      (!term || [r.name, r.description || '', projectSummaries[r.name]?.short || '', projectSummaries[r.name]?.overview || '', r.language || '', ...r.topics, categoryFor(r)].join(' ').toLowerCase().includes(term))
     );
     return items.sort((a, b) => {
       if (sort === 'name') return a.name.localeCompare(b.name);
@@ -232,7 +243,7 @@ function App() {
                       {repo.preview_image ? <img src={repo.preview_image} alt={'Actual preview of ' + repo.name} loading="lazy" decoding="async" /> : <div className="featured-empty"><Code2 size={30}/><span>NO LIVE SCREENSHOT</span></div>}
                       <span className={'preview-badge ' + (live ? 'live-badge' : '')}>{live ? 'LIVE APP' : repo.preview_image ? 'REPOSITORY MEDIA' : 'SOURCE ONLY'}</span>
                     </div>
-                    <div className="featured-information"><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p>{repo.description || 'Explore the project architecture, source code, and documentation.'}</p></div>
+                    <div className="featured-information"><span className="eyebrow">AI & AUTOMATION</span><h3>{repo.name}</h3><p className="project-summary">{getProjectSummary(repo).short}</p>{getProjectSummary(repo).overview && <details className="project-details"><summary>What it does <ChevronDown size={14}/></summary><p>{getProjectSummary(repo).overview}</p></details>}</div>
                     <span className="featured-link">{live ? 'Launch app' : 'Explore repository'} <ArrowRight size={16}/></span>
                   </article>;
                 })}
